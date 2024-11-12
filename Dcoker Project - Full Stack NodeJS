@@ -1,0 +1,195 @@
+sudo yum -y install npm
+npm init -y
+npm install express pg dotenv cors
+npx create-react-app .
+npm install axios
+sudo yum -y install docker
+sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+sudo docker-compose version
+
+vi docker-compose.yaml
+version: '3.1'
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
+:wq
+
+=========================
+vi index.js
+
+const express = require('express');
+const { Pool } = require('pg');
+const cors = require('cors');
+const app = express();
+const port = 5000;
+
+app.use(cors());
+app.use(express.json());
+
+// PostgreSQL configuration
+const pool = new Pool({
+  user: 'myuser',
+  host: 'postgres',  // This will be the service name in Docker Compose
+  database: 'mydatabase',
+  password: 'mypassword',
+  port: 5432,
+});
+
+// Test route
+app.get('/api', (req, res) => {
+  res.send('Hello from Node.js');
+});
+
+// Example route to fetch data from the database
+app.get('/api/data', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM mytable');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).send(err.message);
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+
+:wq
+
+=========================
+vi Dockerfile
+FROM node:14
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 5000
+CMD ["node", "index.js"]
+
+:wq
+
+=========================
+vi .env
+DB_HOST=postgres
+DB_USER=myuser
+DB_PASSWORD=mypassword
+DB_NAME=mydatabase
+
+:wq
+
+=========================
+vi app.js
+
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/data')
+      .then(response => setData(response.data))
+      .catch(error => console.error(error));
+  }, []);
+
+  return (
+    <div className="App">
+      <h1>Data from Backend</h1>
+      <ul>
+        {data.map(item => (
+          <li key={item.id}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
+
+:wq
+
+=========================
+vi Dockerfile
+FROM node:14
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npx", "serve", "-s", "build"]
+
+:wq
+
+
+=========================
+vi docker-compose.yml
+
+version: '3.7'
+services:
+  postgres:
+    build: ./db
+    image: postgres:13
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_NAME=mydatabase
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+
+:wq
+
+=========================
+
+
+sudo docker-compose up -d
+sudo docker ps -a
+sudo docker logs myapp-postgres-1
+
+
+
+
+
+
+
+
+
+
+
