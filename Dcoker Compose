@@ -1,1 +1,108 @@
+Demo 1:
+
+sudo yum -y install docker
+sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+sudo docker-compose version
+
+vi docker-compose.yml
+============================
+services:
+  app:
+    image: nginx
+    ports:
+      - "80:80"
+  db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+
+:wq
+
+============================
+
+sudo docker-compose up -d
+
+
+
+
+
+Demo 2:
+
+demo2/
+├── docker-compose.yml
+├── web/
+│   ├── Dockerfile
+│   └── index.html
+└── db/
+    └── Dockerfile
+
+
+web/Dockerfile
+
+# Use the NGINX image as the base image
+FROM nginx:latest
+
+# Copy the index.html file to the default NGINX HTML folder
+COPY index.html /usr/share/nginx/html/index.html
+
+# Expose port 80 for the NGINX server
+EXPOSE 80
+:wq
+===============================
+
+web/index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dockerized NGINX</title>
+</head>
+<body>
+    <h1>Hello from NGINX inside Docker!</h1>
+</body>
+</html>
+
+:wq
+===============================
+
+db/Dockerfile
+
+# Use the official MySQL image as the base image
+FROM mysql:5.7
+
+# Set environment variables for MySQL setup
+ENV MYSQL_ROOT_PASSWORD=root_password
+ENV MYSQL_DATABASE=my_database
+ENV MYSQL_USER=user
+ENV MYSQL_PASSWORD=user_password
+
+# Expose port 3306 for MySQL
+EXPOSE 3306
+
+:wq
+===============================
+
+vi docker-compose.yml
+services:
+  web:
+    build:
+      context: ./web
+    ports:
+      - "8080:80"
+
+  db:
+    build:
+      context: ./db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: my_database
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user_password
+    ports:
+      - "3306:3306"
+
+:wq
+==========================
 
